@@ -1,0 +1,137 @@
+# ============================================================
+# 根目录全局 .gitignore
+#
+# 说明：backend / frontend / miniprogram 三个子项目已各有自己的
+#       .gitignore，本文件只做「跨项目兜底」与「密钥防误提交」，
+#       与子文件互补，不重复造轮子。
+#
+# 有意保留、不要忽略的文件（均为已脱敏版本）：
+#   - package-lock.json         锁依赖版本，保证可复现安装
+#   - backend/.../application.yml  真实凭据已换成 ${...} 占位符
+#   - frontend/.env.development、.env.production  仅含特性开关
+# ============================================================
+
+
+# ---------- 1. 操作系统垃圾文件 ----------
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+
+# ---------- 2. 编辑器 / IDE ----------
+.idea/
+.vscode/
+.history/
+*.iml
+*.ipr
+*.iws
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*.swn
+# Eclipse / STS
+.classpath
+.project
+.settings/
+.factorypath
+.apt_generated
+.sts4-cache
+
+
+# ---------- 3. 日志 / 临时文件 ----------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+*.stackdump
+
+
+# ---------- 4. 构建产物（跨项目兜底）----------
+node_modules/
+dist/
+build/
+target/
+out/
+.cache/
+.temp/
+.vite/
+# uni-app / HBuilderX
+unpackage/
+.hbuilderx/
+*.wgt
+# Maven wrapper 二进制
+.mvn/wrapper/maven-wrapper.jar
+
+
+# ---------- 5. 环境变量与本地覆盖 ----------
+# 只忽略本地私有配置，提交版的 .env.development / .env.production 保留
+.env
+.env.local
+.env.*.local
+*.local
+
+
+# ---------- 6. 密钥与凭据（重要：防误提交）----------
+# 本项目配置已统一改为 ${...} 占位符，真实凭据绝不允许进仓库。
+# 本地私有 Spring 配置（application.yml 是脱敏版，保留提交）
+application-local.yml
+application-local.yaml
+application-local.properties
+application-secret.yml
+application-secret.yaml
+application-secret.properties
+application-prod.yml
+application-prod.yaml
+application-prod.properties
+*-secret.yml
+*-secret.yaml
+*-secret.properties
+# 证书 / 密钥文件
+*.pem
+*.p12
+*.pfx
+*.key
+*.jks
+*.keystore
+# 明文凭据文件（本项目曾出现过这类文件，务必挡住）
+*KEY*.txt
+*_KEY.txt
+secrets.txt
+credentials.txt
+token.txt
+# 本地 classpath 快照
+cp.txt
+
+
+# ---------- 7. 测试 / 覆盖率 / 运行残留 ----------
+coverage/
+.nyc_output/
+*.lcov
+junit*.xml
+*.hprof
