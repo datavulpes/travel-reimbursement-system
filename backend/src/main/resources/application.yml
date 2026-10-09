@@ -1,0 +1,287 @@
+# ============================================================
+#  企业差旅管理与费用报销系统 —— 后端主配置（已脱敏 · 开源版）
+#
+#  本文件已移除全部密钥与本地路径，开箱不能直接启动。
+#  以下占位符需由你自行填入（推荐用环境变量 / 启动参数注入，避免提交到仓库）：
+#    ${DB_PASSWORD}         MySQL 密码
+#    ${OSS_ACCESS_KEY_ID} / ${OSS_ACCESS_KEY_SECRET}   阿里云 OSS 密钥
+#    ${FILE_SIGN_SECRET}    影像临时链接签名密钥（本地随机串即可）
+#    ${OCR_APP_ID} / ${OCR_API_KEY} / ${OCR_SECRET_KEY} 百度 OCR 密钥（travel.ocr.enabled=false 可关）
+#    ${TOKEN_SECRET}        登录令牌签名密钥（python: secrets.token_urlsafe(32)）
+#    ${AI_API_KEY}          AI 模型密钥（travel.ai.enabled=false 时留空，走本地演示）
+#    ${UPLOAD_DIR}          影像本地落盘根目录（storage.type=local 时生效）
+#
+#  快速本地演示：travel.ai.enabled=false、travel.storage.type=local，
+#  并填好 ${DB_PASSWORD} 与 ${TOKEN_SECRET} 两项即可。
+# ============================================================
+
+
+server:
+  port: 8080
+  # 前端 VITE_API_BASE=/api，nginx 的 location /api/ 转发时保留前缀，
+  # 所以后端统一挂 /api，Controller 里只写 @RequestMapping("/apply") 即可。
+  servlet:
+    context-path: /api
+    encoding:
+      encoding: UTF-8
+
+spring:
+  application:
+    name: travel-server
+
+  # ---------- 数据源 ----------
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 库名 travel_server，与数据库目录的 schema.sql / README.md 一致。
+    url: jdbc:mysql://127.0.0.1:3306/travel_server?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    username: root
+    password: ${DB_PASSWORD}
+
+  # ---------- 文件上传 ----------
+  # 票据影像上限 10MB，与前端 nginx.conf 的 client_max_body_size 10m 对齐
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+      resolve-lazily: true
+    encoding:
+      force: true
+
+  # ---------- 静态资源 ----------
+  web:
+    resources:
+      static-locations: classpath:/static/
+
+# ============================================================
+#  MyBatis-Plus
+# ============================================================
+mybatis-plus:
+  configuration:
+    # 下划线转驼峰：apply_no -> applyNo，全表依赖此项
+    map-underscore-to-camel-case: true
+    # 开发期打印 SQL，联调完可改成 org.apache.ibatis.logging.nologging.NoLoggingImpl
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 字段为空时不拼进 update 语句，避免把值刷成 null
+    jdbc-type-for-null: 'null'
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+  global-config:
+    # 控制台 banner 关掉，日志干净些
+    banner: false
+    db-config:
+      # 主键自增，与建表语句 id BIGINT AUTO_INCREMENT 一致
+      id-type: auto
+      # 逻辑删除：只有 sys_user 有 deleted 字段，其余表不受影响
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      # 字段策略：只更新非 null 字段
+      update-strategy: not_null
+      where-strategy: not_empty
+  # Mapper XML 位置（复杂统计查询用，如费效比月报）
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.ts.travelserver.entity
+
+# ============================================================
+#  业务自定义配置
+# ============================================================
+travel:
+
+  # ---------- 公司信息 ----------
+  company:
+    # TODO-按需填写：填本公司发票抬头全称（留空表示人维不校验这一项）。
+    # 填了之后，财务四维比对会多一条「票据销售方与本公司抬头不一致」的异常。
+    # 演示阶段建议先留空，否则每张票都会被判不一致。
+    invoice-title: ""
+
+  # ---------- 票据影像存储 ----------
+  # 影像不入库，库里只存相对路径（img_path），读的时候统一走带过期的地址。
+  # 放哪由 travel.storage.type 决定：local 落本地磁盘，oss 落阿里云 OSS 私有桶。
+  # 两套实现对外的行为完全一致（签名、过期、取图方式都相同），换的时候只改这一项。
+  storage:
+    # local（不需要任何外部账号）/ oss
+    # 已切到 oss：老影像已整体搬到 travel-server0 桶（脚本 测试数据/迁移影像到OSS.py），
+    # 库里 img_path 一字没动。想临时回滚就把这里改回 local，本地文件还留在 ${UPLOAD_DIR}
+    type: oss
+    # 删除票据时一并删掉影像。关掉会留下没人认领的文件，只在排查问题时临时关
+    delete-with-invoice: true
+    oss:
+      # 下面四项换成你自己的 OSS 桶与密钥，缺一项时启动会直接报错
+      # （刻意不静默退回本地——静默退回会让人以为传上了、其实没传）
+      endpoint: oss-cn-beijing.aliyuncs.com
+      bucket: "travel-server0"
+      access-key-id: "${OSS_ACCESS_KEY_ID}"
+      access-key-secret: "${OSS_ACCESS_KEY_SECRET}"
+      # 对象目录前缀。只影响 OSS 上的路径，库里的 img_path 不含它，
+      # 这样切回 local 时路径与老数据完全一致，不用迁移
+      dir-prefix: invoice/
+      # 绑定了自定义域名才填，留空用桶默认域名 https://{bucket}.{endpoint}
+      public-domain: ""
+      # 列表页缩略图的图片处理参数；留空表示列表直接用原图
+      thumbnail-process: "image/resize,w_240"
+      connect-timeout-ms: 3000
+      read-timeout-ms: 15000
+
+  file:
+    # TODO-按需修改：影像存放根目录（Windows 用正斜杠，路径不要带中文）
+    root: ${UPLOAD_DIR}
+    # 允许上传的扩展名，PDF 与手机拍照图片
+    allowed-extensions: jpg, jpeg, png, webp, heic, pdf
+    # 影像读取走后端签名链接，有效期（分钟）；过期后需重新取链
+    url-expire-minutes: 30
+    # 影像临时链接的签名密钥，同 token-secret，本地自己生成一串即可
+    sign-secret: "${FILE_SIGN_SECRET}"
+
+  # ---------- OCR（唯一外部依赖，可关） ----------
+  # 关闭时上传接口直接返回 ocrSuccess=false，前端自动转手工录入，主流程不阻塞。
+  # 想要演示快、或者额度用完了，把 enabled 改回 false 即可，不用动代码。
+  ocr:
+    enabled: true
+    provider: baidu
+    # 百度智能云密钥三件套（「通用文字识别-高精度版」，不是「增值税发票识别」——
+    # 那个接口按税务局发票模板匹配，火车票/出租车票/行程单一律返回 282103 拒识）
+    app-id: ${OCR_APP_ID}
+    api-key: ${OCR_API_KEY}
+    secret-key: ${OCR_SECRET_KEY}
+    # 读取超时给到 10 秒：文字识别本身要 1~3 秒，3 秒会大面积超时判失败。
+    # 连接 3 秒、读取 10 秒，失败重试 1 次（设计报告 7.6）
+    connect-timeout-ms: 3000
+    read-timeout-ms: 10000
+    retry-times: 1
+
+  # ---------- 会话 ----------
+  # 设计报告 6.8：账号密码登录，token 有效期 12 小时，拦截器按角色鉴权
+  security:
+    # 换成你自己的一串随机串即可（可用 python: secrets.token_urlsafe(32)）。
+    # 泄漏等于别人能伪造登录，别提交到公开仓库；改了它所有已登录用户的 token 会失效。
+    token-secret: "${TOKEN_SECRET}"
+    token-expire-hours: 12
+    # 请求头名，前端 request.js 里对应同一个 key
+    token-header: Authorization
+    # 不需要登录即可访问的路径
+    exclude-paths:
+      - /api/system/login
+      - /api/error
+
+  # ---------- 合理性评价权重 ----------
+  # 设计报告 6.7：总分 = 各因子分 × 权重；四个权重之和须为 1
+  eval:
+    weight:
+      history: 0.35   # F1 历史产出率
+      cost: 0.30      # F2 成本占对象产出比
+      freq: 0.20      # F3 频次异常度
+      complete: 0.15  # F4 事由完整度
+    # 分档阈值：>=75 建议，55~74 提示，<55 关注
+    level:
+      suggest-threshold: 75
+      notice-threshold: 55
+    # F1 无历史数据时的中性分
+    default-history-score: 60
+    # F3 判定「短期高频」：同一对象 30 天内第 3 次及以上
+    freq-window-days: 30
+    freq-threshold: 3
+    # 事前提示：该对象上一趟无进展且间隔小于 15 天
+    no-progress-gap-days: 15
+
+  # ---------- AI 能力（模块 05 语义评价为主，可关） ----------
+  # 三个层次，从轻到重：
+  #   enabled=false  → 走本地启发式（不需要任何密钥），全链路照跑，页面标注「本地演示」
+  #   enabled=true   → 真调模型（需要下面三个配置项齐全）
+  #   applyDelta=false → AI 照算照展示，但一分不改（答辩演示对比用）
+  # 模型挂了、超时、输出不合法，一律降级为「AI 未参与」，主流程不受影响。
+  ai:
+    enabled: true
+    # 服务地址，填到根路径即可（程序会自动拼 /chat/completions）
+    #   DeepSeek   https://api.deepseek.com
+    #   智谱       https://open.bigmodel.cn/api/paas/v4
+    #   本地 Ollama http://localhost:11434/v1      ← 断网也能演示，api-key 填任意串
+    base-url: "https://api.deepseek.com"
+    # 模型名。deepseek-chat / deepseek-reasoner 官方已在 2026-07-24 停服，别再填这两个。
+    #   deepseek-flash    DeepSeek-V4.1-Flash，便宜够用，推荐
+    #   deepseek-v4-pro   DeepSeek-V4-Pro-0813，推理更强，价格约 4 倍
+    model: "deepseek-flash"
+    # 模型服务的 API Key。别提交到公开仓库
+    api-key: "${AI_API_KEY}"
+    connect-timeout-ms: 3000
+    # 读取超时。实测同一份 Δ 评价请求：关掉思考约 0.8~1.1 秒，开启思考约 1.9 秒。
+    # 给 4 秒是留一倍余量，网络抖动时不至于误判；超时降级 Δ=0，绝不让提交接口干等
+    read-timeout-ms: 4000
+    temperature: 0
+    # 512 是给「非思考模式」定的，实测输出 130 个 token 左右。
+    # 一旦打开 thinking，思维链会和正文抢这份配额，务必同步放大到 2000+
+    max-tokens: 512
+    # DeepSeek V4 系默认开启思考模式（且会静默忽略 temperature）。
+    # 实测本项目的强约束 prompt 下两种都能出结果，但关闭只要一半时间、一半 token，
+    # 所以显式关掉。换 Ollama / 智谱时把这一行删掉（它们不认这个字段，带了会 400）
+    thinking: false
+    # TODO-需要你维护：改 prompt 模板必须同步改这个版本号，否则缓存与留痕对不上
+    # 2026-09-27-1：新增 APPLY_ASSIST 场景（填写助手，入参带库内上下文）
+    # 2026-09-27-2：新增 MONTHLY_INSIGHT 场景（管理层月度洞察，只归纳不计算）
+    # 2026-09-28-1：值域统一为六个出差类型；未填项改成 null，不许占位词
+    # 2026-09-28-2：填单助手改为「建议清单」契约（items / kind / suggest / evidence），
+    #               取消素材门槛，交给模型的输入扩成表单 + 未填清单 + 库内证据四层
+    # 2026-10-06-2：新增 DATA_QA 问数助手（管理层用大白话问真实业务数据，模型只做叙事）
+    prompt-version: "2026-10-06-2"
+    cache-max-entries: 500
+    cache-ttl-minutes: 60
+    # 月度洞察报告的自动生成时间，默认每天 0 点。填 "-" 表示不自动跑。
+    # 想当场看到效果就临时改成每 5 分钟一次：0 */5 * * * *
+    insight-cron: "0 0 0 * * *"
+    log-enabled: true
+    # 事前预演（G-02）默认不烧 token；提交（A-02）才算一次并落库
+    preview-enabled: true
+    apply-delta: true
+    # ---------- 场景级覆盖 ----------
+    # 三个场景对「等多久」的容忍度完全不一样，共用一个读超时必然两头不讨好：
+    #   填写助手  在提交链路上，员工点完就盯着等，超了立刻降级走本地模板。
+    #              实测这条 prompt 输出 6 条建议，1.5 秒会大面积超时，
+    #              2.5 秒是「比全局紧、又不至于白跑」的那一档
+    #   月度洞察  半夜定时任务跑的，没人盯着，给 30 秒也不影响任何人
+    #   钻取解释  人点了才跑一次，可以等，但比提交宽松不了太多
+    # 只写要改的项，没写的沿用上面的全局值。场景名写错不报错、也不生效
+    scenes:
+      APPLY_ASSIST:
+        read-timeout-ms: 2500
+      DRILL_EXPLAIN:
+        read-timeout-ms: 8000
+      MONTHLY_INSIGHT:
+        read-timeout-ms: 30000
+        max-tokens: 1024
+      # 问数助手：意图抽取 + 叙事两段各打一次模型，都在人点击后触发，
+      # 给 8 秒够从容；max-tokens 放大到 1500 容纳叙事 JSON（answer 不超过 80 字）
+      DATA_QA:
+        read-timeout-ms: 8000
+        max-tokens: 1500
+
+  # ---------- 差标校验阈值 ----------
+  # 设计报告 6.3.3：不超上限 NORMAL；超 10% 以内 HIGH；超 10% 以上 EXCEED
+  standard:
+    high-ratio: 0.10
+
+  # ---------- 审批时限（SLA）与催办 ----------
+  # 只约束在审的两个环节；超时系统只标「已逾期」，不会自动通过、自动退回、自动转办。
+  # 演示想立刻看到逾期标记，把两个小时数调小（比如 0）即可，不用改代码。
+  sla:
+    dept-review-hours: 48
+    final-review-hours: 48
+    # 同一张单同一人的催办间隔，防止对着一张单连点
+    remind-interval-hours: 24
+
+  # ---------- 同类花费参考 ----------
+  cost-ref:
+    # 每天凌晨 2 点按「近 12 个月」窗口重算一遍参考值。填 "-" 表示不自动跑，
+    # 需要时手动点标准配置页的刷新按钮（功能已备，入口还没做）。
+    # 刻意避开上面的 insight-cron（0 点）：两个任务都要全表扫单据，错开跑。
+    refresh-cron: "0 0 2 * * *"
+
+# ============================================================
+#  日志
+# ============================================================
+logging:
+  level:
+    root: info
+    com.ts.travelserver: debug
+    # 关掉 MyBatis-Plus 启动 banner 与 Mapper 绑定的 debug 噪音
+    com.baomidou.mybatisplus: warn
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n'

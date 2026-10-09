@@ -1,0 +1,190 @@
+/*
+ * 手机版式适配。
+ *
+ * 两条硬规矩，改这个文件前先看：
+ * 1. 所有规则都必须写在下面的媒体查询里。写在外面的每一条都会动到 PC 端，
+ *    而这个项目的诉求是「只优化手机，网页端一像素都不许变」。
+ * 2. 断点字符串要和 src/utils/breakpoint.js 里的 MQ_MOBILE 保持一致。
+ *    (pointer: coarse) 是关键：它让电脑拖窄窗口也不会触发手机样式。
+ *
+ * 自查方法：Chrome 里按 Ctrl+Shift+M 打开设备工具栏再刷新（只拖窄窗口是没用的）。
+ */
+
+@media (max-width: 768px) and (pointer: coarse) {
+
+  /* ---------- 骨架：侧栏交给抽屉，正文铺满 ---------- */
+  /* RoleLayout 里已经用 v-if 把侧栏换成了抽屉，这里再兜一层底 */
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .app-aside {
+    display: none;
+  }
+
+  .app-header {
+    height: 52px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .hd-left h2 {
+    font-size: 15px;
+  }
+
+  /* 页头右侧的「姓名 · 部门」在窄屏会挤掉标题，限制宽度并省略 */
+  .user-name {
+    max-width: 38vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+  }
+
+  /* 底部留出刘海屏安全区 */
+  .app-body {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  /* ---------- 触摸目标：手指点得准 ---------- */
+  .el-menu-item,
+  .el-sub-menu__title {
+    min-height: 44px;
+  }
+
+  .el-button:not(.is-link):not(.el-button--small):not(.el-button--large) {
+    min-height: 40px;
+  }
+
+  /* ---------- iOS 聚焦自动放大：输入控件字号提到 16px ---------- */
+  /* Safari 对小于 16px 的输入框会聚焦时整页放大，看着像页面"跳了一下" */
+  .el-input__inner,
+  .el-textarea__inner,
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  /* ---------- 表格：横向滑动，首列吸附不跟着走 ---------- */
+  .el-table__inner-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .el-table .el-table__cell:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--c-panel, #fff);
+  }
+
+  .el-table th.el-table__cell:first-child {
+    z-index: 3;
+  }
+
+  /* 首列右侧一道浅影，滑动时看得出它是浮着的 */
+  .el-table .el-table__cell:first-child::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 6px;
+    transform: translateX(6px);
+    box-shadow: inset 6px 0 6px -6px rgba(23, 38, 56, .18);
+    pointer-events: none;
+  }
+
+  /* 表格里的操作按钮别被撑成一整行 */
+  .el-table .el-button {
+    min-height: 0;
+    padding: 4px 6px;
+  }
+
+  /* ---------- 弹窗与抽屉铺满 ---------- */
+  .el-dialog {
+    width: 92% !important;
+    margin-top: 6vh !important;
+  }
+
+  /* 菜单抽屉（78%）保持侧滑手感，其余抽屉直接全屏 */
+  .el-drawer:not(.mobile-menu-drawer) {
+    width: 100% !important;
+  }
+
+  .el-drawer__footer {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
+  }
+
+  /* ---------- 分页：只留翻页 ---------- */
+  .el-pagination__sizes,
+  .el-pagination__jump {
+    display: none !important;
+  }
+
+  .el-pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .el-pagination button {
+    min-width: 34px;
+  }
+
+  /* ---------- 表单：标签挪到输入框上方 ---------- */
+  .el-form-item {
+    display: block;
+  }
+
+  .el-form-item__label {
+    display: block !important;
+    width: auto !important;
+    text-align: left !important;
+    padding: 0 0 6px !important;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .el-form-item__content {
+    margin-left: 0 !important;
+  }
+
+  /* ---------- 间距收紧，把宽度让给内容 ---------- */
+  .el-card__body {
+    padding: 12px;
+  }
+
+  .el-card__header {
+    padding: 12px;
+  }
+
+  /* 宽屏下并排的工具条在手机上折行 */
+  .el-row > .el-col {
+    min-width: 0;
+  }
+
+  /* ---------- 月报里的「建议」表格 ----------
+     手机上四列并排会把「依据」挤成竖排，改成两列：动作+对象一行、依据一行、
+     状态一行，表头那行列宽对不上了，直接隐藏 */
+  .act-hd {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .act-th { display: none; }
+
+  .act-tr {
+    grid-template-columns: auto 1fr;
+    gap: 4px 8px;
+    padding: 8px 0;
+  }
+
+  .act-detail { grid-column: 1 / -1; }
+  .act-op { grid-column: 1 / -1; }
+
+  /* ---------- AI 运行状况页的指标卡 ----------
+     五列在手机上一格不到 70px，数字会被压成两行，改成两列 */
+  .stat-row { grid-template-columns: repeat(2, 1fr) !important; }
+}

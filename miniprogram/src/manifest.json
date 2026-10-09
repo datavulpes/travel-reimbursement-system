@@ -1,0 +1,113 @@
+{
+    /* 安卓桌面图标下最长约 4 个字，写全名会被截成「企业差旅…」。
+       H5 顶部标题由下面的 h5.title 单独控制，不受这里影响。 */
+    "name" : "差旅助手",
+    "appid" : "",
+    "description" : "企业差旅管理工具 员工移动端（uni-app 一套代码出 H5 / 小程序 / App）",
+    "versionName" : "1.0.1",
+    "versionCode" : "101",
+    "transformPx" : false,
+    /* H5 特有相关：base 设成 /m/，与 PC 端共用 8088 一条隧道 */
+    "h5" : {
+        "router" : {
+            "mode" : "hash",
+            "base" : "/m/"
+        },
+        "title" : "企业差旅管理",
+        "template" : "index.html",
+        "devServer" : {
+            "port" : 5174
+        }
+    },
+    /* 5+App特有相关 */
+    "app-plus" : {
+        "usingComponents" : true,
+        "nvueStyleCompiler" : "uni-app",
+        "compilerVersion" : 3,
+        /* 演示时锁竖屏，横屏下这套页面排版会散 */
+        "screenOrientation" : [ "portrait-primary" ],
+        "splashscreen" : {
+            "alwaysShowBeforeRender" : true,
+            "waiting" : true,
+            "autoclose" : true,
+            "delay" : 0
+        },
+        /* 模块配置 */
+        "modules" : {},
+        /* 应用发布信息 */
+        "distribute" : {
+            /* android打包配置 */
+            "android" : {
+                /* Android 9（API 28）起默认禁止明文 HTTP，不开这个开关，
+                   App 里所有 http:// 请求会直接失败且不报错。
+                   走 https 隧道时它不影响，留着是给「手机开热点」的兜底场景用的。 */
+                "usesCleartextTraffic" : true,
+                "permissions" : [
+                    "<uses-permission android:name=\"android.permission.CHANGE_NETWORK_STATE\"/>",
+                    "<uses-permission android:name=\"android.permission.MOUNT_UNMOUNT_FILESYSTEMS\"/>",
+                    "<uses-permission android:name=\"android.permission.VIBRATE\"/>",
+                    "<uses-permission android:name=\"android.permission.READ_LOGS\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_WIFI_STATE\"/>",
+                    "<uses-feature android:name=\"android.hardware.camera.autofocus\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
+                    "<uses-permission android:name=\"android.permission.CAMERA\"/>",
+                    "<uses-permission android:name=\"android.permission.GET_ACCOUNTS\"/>",
+                    "<uses-permission android:name=\"android.permission.READ_PHONE_STATE\"/>",
+                    "<uses-permission android:name=\"android.permission.CHANGE_WIFI_STATE\"/>",
+                    "<uses-permission android:name=\"android.permission.WAKE_LOCK\"/>",
+                    "<uses-permission android:name=\"android.permission.FLASHLIGHT\"/>",
+                    "<uses-feature android:name=\"android.hardware.camera\"/>",
+                    "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>"
+                ]
+            },
+            /* ios打包配置 */
+            "ios" : {
+                /* iOS 的 ATS 同样默认只放行 https，这里放开 http。
+                   HBuilderX 可视化 manifest 里对应「iOS 设置 → 允许任意 HTTP 请求」，
+                   两边以可视化界面显示为准。 */
+                "ATS" : {
+                    "NSAllowsArbitraryLoads" : true
+                }
+            },
+            /* App 图标。路径相对项目根（src），编译后落在 dist/build/app/static/app-icon/。
+               HBuilderX 可视化界面「App图标配置」读到的也是这几个值。 */
+            "icons" : {
+                "android" : {
+                    "hdpi" : "static/app-icon/hdpi-72.png",
+                    "xhdpi" : "static/app-icon/xhdpi-96.png",
+                    "xxhdpi" : "static/app-icon/xxhdpi-144.png",
+                    "xxxhdpi" : "static/app-icon/xxxhdpi-192.png",
+                    "play" : "static/app-icon/play-512.png",
+                    "push" : "static/app-icon/hdpi-72.png"
+                }
+            },
+            /* SDK配置 */
+            "sdkConfigs" : {}
+        }
+    },
+    /* 快应用特有相关 */
+    "quickapp" : {},
+    /* 小程序特有相关 */
+    "mp-weixin" : {
+        "appid" : "",
+        "setting" : {
+            "urlCheck" : false,
+            "minified" : true
+        },
+        "lazyCodeLoading" : "requiredComponents",
+        "usingComponents" : true
+    },
+    "mp-alipay" : {
+        "usingComponents" : true
+    },
+    "mp-baidu" : {
+        "usingComponents" : true
+    },
+    "mp-toutiao" : {
+        "usingComponents" : true
+    },
+    "uniStatistics": {  
+        "enable": false
+    },
+    "vueVersion" : "3"
+}

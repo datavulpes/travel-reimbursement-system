@@ -1,0 +1,137 @@
+:root {
+  --c-bg: #f4f6f9;
+  --c-panel: #ffffff;
+  --c-border: #e3e7ed;
+  --c-text: #1f2733;
+  --c-text-sub: #6b7684;
+  --c-text-weak: #96a0ad;
+  --c-primary: #2563a8;
+  --c-primary-soft: #e8f1fa;
+  --c-green: #10956a;
+  --c-green-soft: #e4f5ee;
+  --c-amber: #b7791f;
+  --c-amber-soft: #fdf3e2;
+  --c-red: #c0392b;
+  --c-red-soft: #fbeceb;
+  --c-purple: #6b4fa0;
+  --c-purple-soft: #efeaf8;
+  --radius: 10px;
+  --shadow-sm: 0 1px 2px rgba(23, 38, 56, .06);
+  --shadow-md: 0 4px 14px rgba(23, 38, 56, .08);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- 通用容器 ---------- */
+.page-wrap { padding: 18px 22px 28px; }
+
+.card {
+  background: var(--c-panel);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-hd {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-hd h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .3px;
+}
+
+.card-bd { padding: 16px 18px; }
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text-sub);
+  letter-spacing: .5px;
+  margin-bottom: 10px;
+}
+
+.muted { color: var(--c-text-sub); }
+.weak { color: var(--c-text-weak); }
+.mono {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12.5px;
+}
+
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.row-end { display: flex; justify-content: flex-end; gap: 10px; }
+.mt-16 { margin-top: 16px; }
+.mt-12 { margin-top: 12px; }
+
+/* ---------- KPI 数字卡 ---------- */
+.kpi-card {
+  background: var(--c-panel);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.kpi-card .kpi-label { font-size: 12.5px; color: var(--c-text-sub); }
+.kpi-card .kpi-value {
+  font-size: 25px;
+  font-weight: 650;
+  line-height: 1.25;
+  margin-top: 4px;
+  letter-spacing: .5px;
+}
+.kpi-card .kpi-foot { font-size: 12px; color: var(--c-text-weak); margin-top: 2px; }
+
+/* ---------- 提示卡 ---------- */
+.tip-box {
+  border-radius: 8px;
+  padding: 10px 13px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.tip-info { background: var(--c-primary-soft); color: #1c4d80; border-left: 3px solid var(--c-primary); }
+.tip-warn { background: var(--c-amber-soft); color: #8a5a12; border-left: 3px solid var(--c-amber); }
+.tip-success { background: var(--c-green-soft); color: #0c7355; border-left: 3px solid var(--c-green); }
+.tip-danger { background: var(--c-red-soft); color: #96271b; border-left: 3px solid var(--c-red); }
+
+/* ---------- Element Plus 微调 ---------- */
+.el-menu { border-right: none !important; }
+.el-menu-item { height: 46px !important; line-height: 46px !important; }
+.el-menu-item.is-active { background: var(--c-primary-soft) !important; font-weight: 600; }
+.el-table th.el-table__cell { background: #fafbfc !important; color: var(--c-text-sub) !important; font-weight: 600 !important; }
+.el-card { border-radius: var(--radius) !important; }
+.el-drawer__body { padding-top: 8px; }
+.el-timeline-item__node { background: var(--c-primary); }
+
+/* ---------- 表格金额列 ---------- */
+.amount { font-variant-numeric: tabular-nums; }
+.amount-out { color: var(--c-red); font-variant-numeric: tabular-nums; }
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #cfd6de; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #b6bfc9; }
+::-webkit-scrollbar-track { background: transparent; }
